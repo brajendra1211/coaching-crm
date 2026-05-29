@@ -166,6 +166,23 @@
 
 @section('content')
 
+@if(session('success'))
+    <div style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0;padding:12px 14px;border-radius:12px;margin-bottom:15px;">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if($errors->any())
+    <div style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:12px 14px;border-radius:12px;margin-bottom:15px;">
+        <strong>Please fix the following:</strong>
+        <ul style="margin:8px 0 0;">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
     @csrf
     @method('PUT')
@@ -202,6 +219,45 @@
                             <label>Favicon</label>
                             <input type="file" name="favicon" accept="image/*,.ico">
                             <small style="color:#64748b;">Recommended: 64 x 64px.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-head">
+                    <h3>Admin Account</h3>
+                    <p>Update your login name, email address and password.</p>
+                </div>
+
+                <div class="settings-body">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Admin Name *</label>
+                            <input type="text" name="admin_name" value="{{ old('admin_name', $adminUser?->name) }}" placeholder="Admin Name" autocomplete="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Admin Login Email *</label>
+                            <input type="email" name="admin_email" value="{{ old('admin_email', $adminUser?->email) }}" placeholder="admin@example.com" autocomplete="email" required>
+                            <small style="color:#64748b;">This email will be used for admin login.</small>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" name="admin_current_password" value="" placeholder="Required only for password change" autocomplete="current-password">
+                        </div>
+
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" name="admin_password" value="" placeholder="Minimum 8 characters" autocomplete="new-password">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" name="admin_password_confirmation" value="" placeholder="Repeat new password" autocomplete="new-password">
                         </div>
                     </div>
                 </div>
@@ -472,6 +528,11 @@
                     </div>
 
                     <div class="preview-info">
+                        <div>
+                            <small>Admin Login</small>
+                            <strong>{{ $adminUser?->email ?: 'Not available' }}</strong>
+                        </div>
+
                         <div>
                             <small>Institute</small>
                             <strong>{{ $setting->institute_name }}</strong>

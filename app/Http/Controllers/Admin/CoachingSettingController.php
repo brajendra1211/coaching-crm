@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CoachingSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class CoachingSettingController extends Controller
 {
     public function edit()
     {
         $setting = CoachingSetting::current();
+        $adminUser = auth()->user();
 
-        return view('admin.settings.index', compact('setting'));
+        return view('admin.settings.index', compact('setting', 'adminUser'));
     }
 
     public function update(Request $request)
@@ -64,6 +67,16 @@ class CoachingSettingController extends Controller
             'default_seo_title' => ['nullable', 'string', 'max:255'],
             'default_seo_description' => ['nullable', 'string'],
             'default_seo_keywords' => ['nullable', 'string'],
+
+            'admin_name' => ['required', 'string', 'max:255'],
+            'admin_email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($request->user()?->id),
+            ],
+            'admin_current_password' => [Rule::requiredIf(fn () => $request->filled('admin_password')), 'current_password'],
+            'admin_password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
         $data = $request->only([
@@ -132,8 +145,44 @@ class CoachingSettingController extends Controller
 
         $setting->update($data);
 
+        $this->updateAdminAccount($request);
+
         return redirect()
             ->route('admin.settings.index')
-            ->with('success', 'Website settings updated successfully.');
+            ->with('success', 'Settings updated successfully.');
+    }
+
+    private function updateAdminAccount(Request $request): void
+    {
+        $adminUser = $request->user();
+
+        if (!$adminUser) {
+            return;
+        }
+
+        $accountData = [];
+
+        if ($request->filled('admin_name')) {
+            $accountData['name'] = $request->input('admin_name');
+        }
+
+        if ($request->filled('admin_email')) {
+            $accountData['email'] = $request->input('admin_email');
+        }
+
+        if ($request->filled('admin_password')) {
+            $accountData['password'] = Hash::make($request->input('admin_password'));
+        }
+
+        if ($accountData === []) {
+            return;
+        }
+
+        $adminUser->update($accountData);
+
+        $request->session()->put([
+            'admin_name' => $adminUser->name,
+            'admin_email' => $adminUser->email,
+        ]);
     }
 }
